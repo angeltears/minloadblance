@@ -4,8 +4,6 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <vector>
 #include <memory>
 #include <cassert>
@@ -16,6 +14,7 @@
 #include "mgr.hpp"
 #include "processpool.h"
 #include "conn.hpp"
+#include "loadxml.hpp"
 using std::vector;
 using std::shared_ptr;
 using std::unique_ptr;
@@ -73,121 +72,9 @@ int main(int argc, char *argv[])
         log(LOG_ERR, __FILE__, __LINE__, "%s", "please specifiy the config file");
         return 1;
     }
-    int cfg_fd = open(cfg_file, O_RDONLY);
-    if (cfg_fd == -1)
-    {
-        log( LOG_ERR, __FILE__, __LINE__, "read config file met error: %s", strerror( errno ) );
-        return 1;
-    }
-    struct stat ret_stat;
-    if (fstat( cfg_fd, &ret_stat ) < 0)
-    {
-        log( LOG_ERR, __FILE__, __LINE__, "read config file met error: %s", strerror( errno ) );
-        return 1;
-    }
-    char *buf = new char[ret_stat.st_size + 1];
-    memset(buf, 0, ret_stat.st_size + 1);
-    ssize_t read_sz = read(cfg_fd, buf, ret_stat.st_size + 1);
-    if (read_sz <= 0)
-    {
-        log( LOG_ERR, __FILE__, __LINE__, "read config file met error: %s", strerror( errno ) );
-        return 1;
-    }
-    /**
-     *以下简单的解析config.xml文件
-     */
     shared_ptr<vector<host> > balance_srv {new vector<host> };
     shared_ptr<vector<host> > logical_srv {new vector<host> };
-    host tmp_host;
-    memset(tmp_host.m_hostname, 0, hostname_size);
-
-    bool opentag = false;
-    char *tmp_hostname;
-    char *tmp_port;
-    char *tmp_connect;
-    char *head_body = buf;
-    char *seg_line;
-    char *seg_body;
-    char *end_body;
-    while (seg_line = strpbrk(head_body, "\n"))
-    {
-        *seg_line++ = '\0';
-        if (strstr( head_body, "<logical_host>" ))
-        {
-            if (opentag == true)
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            else
-            {
-                opentag = true;
-            }
-        }
-        else if(strstr(head_body,"</logical_host>" ))
-        {
-            if( !opentag )
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            logical_srv.get()->push_back(tmp_host);
-            memset( tmp_host.m_hostname, '\0', 1024 );
-            opentag = false;
-        }
-        else if((seg_body = strstr(head_body, "<name>")))
-        {
-            tmp_hostname = seg_body + 6;
-            end_body = strstr(tmp_hostname, "</name>");
-            if (!end_body)
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            *end_body = '\0';
-            memcpy(tmp_host.m_hostname,tmp_hostname, strlen(tmp_hostname));
-        }
-        else if( (seg_body  = strstr( head_body, "<port>" )) != nullptr)
-        {
-            tmp_port = seg_body  + 6;
-            end_body = strstr( tmp_port, "</port>" );
-            if( !end_body )
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            *end_body = '\0';
-            tmp_host.m_port = atoi( tmp_port );
-        }
-        else if( (seg_body = strstr( head_body, "<conns>" )) != nullptr)
-        {
-            tmp_connect = seg_body+ 7;
-            end_body = strstr( tmp_connect, "</conns>" );
-            if( !end_body )
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            *end_body = '\0';
-            tmp_host.m_connect = atoi( tmp_connect);
-        }
-        else if((seg_body = strstr(head_body, "Listen")) != nullptr)
-        {
-            tmp_hostname = seg_body + 7;
-            seg_body = strstr(tmp_hostname, ":");
-            if (seg_body == nullptr)
-            {
-                log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
-                return 1;
-            }
-            *seg_body++ = '\0';
-            tmp_host.m_port = atoi(seg_body);
-            memcpy(tmp_host.m_hostname, tmp_hostname, strlen(tmp_hostname));
-            balance_srv.get()->push_back(tmp_host);
-            memset( tmp_host.m_hostname, '\0', hostname_size);
-        }
-        head_body = seg_line;
-    }
+    load_xml(cfg_file, balance_srv.get(), logical_srv.get());
     if( balance_srv.get()->size() == 0 || logical_srv.get()->size() == 0 )
     {
         log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
@@ -216,7 +103,7 @@ int main(int argc, char *argv[])
                                                    create(listenfd, static_cast<unsigned int>(logical_srv.get()->size()))};
     if (pool.get() != nullptr)
     {
-        pool.get()->run(logical_srv.get());
+      //  pool.get()->run(logical_srv.get());
     }
     close(listenfd);
     return 0;

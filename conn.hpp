@@ -8,6 +8,4 @@
 class conn
 {};
 
-
-
 #endif //MINLOADBLANCE_CONN_HPP
