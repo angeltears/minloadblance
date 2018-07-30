@@ -11,9 +11,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "log.hpp"
-#include "mgr.hpp"
+#include "mgr.h"
 #include "processpool.h"
-#include "conn.hpp"
 #include "loadxml.hpp"
 using std::vector;
 using std::shared_ptr;
@@ -28,6 +27,9 @@ static void usage( const char* prog )
 
 int main(int argc, char *argv[])
 {
+
+
+
     char cfg_file[1024];
     memset(cfg_file, 0, sizeof(cfg_file));
     int option;
@@ -67,21 +69,21 @@ int main(int argc, char *argv[])
             }
         }
     }
-    if (cfg_file[0] == '/0')
+    if (cfg_file[0] == 0)
     {
         log(LOG_ERR, __FILE__, __LINE__, "%s", "please specifiy the config file");
         return 1;
     }
-    shared_ptr<vector<host> > balance_srv {new vector<host> };
-    shared_ptr<vector<host> > logical_srv {new vector<host> };
-    load_xml(cfg_file, balance_srv.get(), logical_srv.get());
-    if( balance_srv.get()->size() == 0 || logical_srv.get()->size() == 0 )
+    vector<host> balance_srv;
+    vector<host> logical_srv;
+    load_xml(cfg_file, &balance_srv, &logical_srv);
+    if( (&balance_srv)->size() == 0 || (&logical_srv)->size() == 0 )
     {
         log( LOG_ERR, __FILE__, __LINE__, "%s", "parse config file failed" );
         return 1;
     }
-    const char *ip = balance_srv.get()->at(0).m_hostname;
-    const int port = balance_srv.get()->at(0).m_port;
+    const char *ip = (&balance_srv)->at(0).m_hostname;
+    const int port = (&balance_srv)->at(0).m_port;
 
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
     assert(listenfd >= 0);
@@ -99,11 +101,11 @@ int main(int argc, char *argv[])
     ret = listen(listenfd, 5);
     assert(ret != -1);
 
-    unique_ptr< processpool<conn,host,mgr> > pool {processpool<conn,host,mgr>::
-                                                   create(listenfd, static_cast<unsigned int>(logical_srv.get()->size()))};
-    if (pool.get() != nullptr)
+    processpool< conn, host, mgr >* pool = processpool< conn, host, mgr >::create( listenfd, logical_srv.size() );
+    if( pool )
     {
-      //  pool.get()->run(logical_srv.get());
+        pool->run( logical_srv );
+        delete pool;
     }
     close(listenfd);
     return 0;

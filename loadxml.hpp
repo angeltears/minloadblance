@@ -10,7 +10,7 @@
 #include <cassert>
 #include "xml/tinyxml2.h"
 #include "log.hpp"
-#include "mgr.hpp"
+#include "mgr.h"
 using std::vector;
 using std::shared_ptr;
 using namespace tinyxml2;

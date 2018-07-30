@@ -2,17 +2,12 @@
 
 <config>
     <Listen>
-        <host>127.0.0.1</host>
-        <port>12345</port>
+        <host>192.168.1.105</host>
+        <port>12343</port>
     </Listen>
     <logical_host>
-        <name>10.194.70.225</name>
-        <port>13579</port>
-        <conns>5</conns>
-    </logical_host>
-    <logical_host>
-        <name>10.194.70.79</name>
-        <port>13579</port>
+        <name>192.168.1.105</name>
+        <port>5188</port>
         <conns>5</conns>
     </logical_host>
 </config>

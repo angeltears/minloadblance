@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5.1)
 project(minloadblance)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -8,8 +8,8 @@ set(CMAKE_CXX_STANDARD 11)
 add_executable(minloadblance
         main.cpp
         log.hpp log.cpp
-        mgr.hpp
+        mgr.h
         processpool.h
-        conn.hpp
+        conn.h
         xml/tinyxml2.h
-        xml/tinyxml2.cpp loadxml.hpp)
+        xml/tinyxml2.cpp loadxml.hpp fdwapper.h)
