@@ -16,7 +16,7 @@
 
   1.代码中有详细的注释
 
-  2.可以在https://justsolitude.com/中找到关键技术解释
+  2.可以在https://justsolitude.com/ 中找到关键技术解释
 
   
 
